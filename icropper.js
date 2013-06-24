@@ -275,8 +275,8 @@
         ,_posBlocks: function() {
             var p = this.startedPos,
                 b = this._blockNodes;
-            var l = parseInt(this.cropNode.style.left);
-            var t = parseInt(this.cropNode.style.top);
+            var l = parseInt(util.style(this.cropNode, 'left'));
+            var t = parseInt(util.style(this.cropNode, 'top'));
             var w = this.cropNode.offsetWidth;
             var ww = this.domNode.offsetWidth;
             var h = this.cropNode.offsetHeight;
@@ -288,8 +288,16 @@
             b.l.style.height = b.r.style.height = h + 'px';
             b.l.style.width = l + 'px';
 
-            b.r.style.width = ww - w - l + 'px';
-            b.b.style.height = hh - h - t + 'px';
+
+            w = ww - w - l;
+            h = hh - h - t;
+
+            //fix IE
+            if(w < 0)w = 0;
+            if(h < 0)h = 0;
+
+            b.r.style.width = w + 'px';
+            b.b.style.height = h + 'px';
         }
 
         ,_onMouseDown: function(e) {
@@ -316,6 +324,7 @@
                 cursor: c
             });
             util.addCss(document.body, 'no-select');
+            util.addCss(document.body, 'unselectable');//for IE
         }
 
         ,_onMouseUp: function(e) {
@@ -327,6 +336,7 @@
                 cursor: 'move'
             });
             util.rmCss(document.body, 'no-select');
+            util.rmCss(document.body, 'unselectable');
             this.onComplete && this.onComplete(this.getInfo());
         }
 
