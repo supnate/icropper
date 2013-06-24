@@ -2,16 +2,55 @@
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
-	<title>Image Cropper Demo</title>
-	<link href="ImageCropper.css" rel="stylesheet"/>
-	<script type="text/javascript" src="ImageCropper.js"></script>
+	<title>iCropper - Javascript Image Cropper</title>
+	<link href="icropper.css" rel="stylesheet"/>
+	<script type="text/javascript" src="icropper.js"></script>
 
+	<style type="text/css">
+		#cropperContainer {
+			float: left;
+		}
+		#previews {
+			float: left;
+			margin-left: 0px;
+		}
+		#previewSmall {
+			margin: 40px;
+			width: 60px;
+			height: 60px;
+		}
+		#previewBig {
+			margin: 40px;
+			width: 150px;
+			height: 150px;
+		}
+	</style>
 
-	<script type="text/javascript">
-
-	</script>
 </head>
 
-<body></body>
+<body>
+	<div id="cropperContainer"></div>
 
+	<div id="previews">
+		<div id="previewSmall"></div>
+		<div id="previewBig"></div>
+	</div>
+	
+</body>
+
+
+<script type="text/javascript">
+	var ic = new ICropper(
+		'cropperContainer'
+		,{
+			keepSquare: true
+			,image: 'demo.png'
+			,preview: [
+				'previewSmall'
+			]
+		});
+	//use bindPreview to dynamically add preview nodes
+	ic.bindPreview('previewBig');
+	
+</script>
 </html>

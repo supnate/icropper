@@ -1,20 +1,35 @@
 (function(){
-
     //Some common utility functions
     var util = {
-        create: function(tag, attrs){
+        mixin: function(dest, src){
+            for(var p in src)dest[p] = src[p];
+        }
+        ,byId: function(id){
+            if(typeof id== 'string')return document.getElementById(id);
+            else return id;
+        }
+        ,create: function(tag, attrs){
             var node = document.createElement(tag);
             this.mixin(node, attrs);
+            return node;
         }
-        ,connect: function(node, evt, callback){
-
+        ,connect: function(node, evt, context, callback){
+            //TODO: use event listeners instead
+            var self = this;
+            node[evt] = function(evt){
+                evt = self.fixEvent(evt);
+                context[callback](evt);
+            }
         }
         ,style: function(node, args){
-            if(typeof args == 'string')return node.style[args];
-            else this.mixin(node.style, args);
-        }
-        ,mixin: function(dest, src){
-            for(var p in src)dest[p] = src[p];
+            if(typeof args == 'string'){
+                var value = node.style[args];
+                if(!value){
+                    s = window.getComputedStyle ? getComputedStyle(node) : node.currentStyle;
+                    value = s[args];
+                }
+                return value;
+            }else this.mixin(node.style, args);
         }
         ,each: function(arr, callback){
             for(var i = 0; i < arr.length; i++)
@@ -37,34 +52,42 @@
             if(i >= 0)arr.splice(i, 1);
             node.className = arr.join(' ');
         }
+        ,fixEvent: function(evt){
+            evt = evt || event; 
+            if(!evt.target)evt.target = evt.srcElement;
+            if(!evt.keyCode)evt.keyCode = evt.which || evt.charCode;
+            if(!evt.pageX){//only for IE
+               evt.pageX = evt.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+               evt.pageY = evt.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+            }
+            return evt;
+        }
     };
 
-    function fixEvent(evt){
-        evt = evt || event; 
-        if(!evt.target)evt.target = evt.srcElement;
-        if(!evt.keyCode)evt.keyCode = evt.which || evt.charCode;
-        if(!evt.pageX){//only for IE
-           evt.pageX = evt.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-           evt.pageY = evt.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-        }
-        return evt;
-    }
+    
 
     window.ICropper = function (container, options){
+        // summary:
+        //  Constructor of the Image Cropper, the container could be a dom node or id.
+
+        container = util.byId(container);
         for(var p in options){
             if(options[p])this[p] = options[p];
         }
-        this.init(container);
+        this.domNode = container || util.create('div');
+        this._init();
     }
 
     ICropper.prototype = {
+
+        //The image url
         image: ''
-        ,width: ''
-        ,height: ''
+
+        //The minimal size of the cropping area
         ,minWidth: 20
         ,minHeight: 20
 
-        //gap between crop region border and container border
+        //The default gap between crop region border and container border
         ,gap: 50
 
         //the initial crop region width and height
@@ -73,53 +96,23 @@
         //whether to keep crop region as a square
         ,keepSquare: false
 
+        //array: the nodes to show previews of cropped image
+        ,preview: null
+
         ,domNode: null
         ,cropNode: null
         ,imageNode: null
 
-        ,init: function(container) {
-            this.domNode = container || document.createElement('div');
-            util.addCss(this.domNode, 'icropper');
-            this.buildRendering();
-
-            this.updateUI();
-            util.connect(this.cropNode, 'onmousedown', '_onMouseDown');
-            util.connect(document, 'onmouseup', '_onMouseUp');
-            util.connect(document, 'onmousemove', '_onMouseMove');
-            util.setSelectable(this.domNode, false);
-            this.image && this.setImage(this.image);
-        }
-
-        ,buildRendering: function() {
-            this._archors = {};
-            this._blockNodes = {};
-
-            this.cropNode = util.create('div', {className: 'crop-node'});
-            this.domNode.appendChild(this.cropNode);
-
-            //Create archors
-            var arr = ['lt', 't', 'rt', 'r', 'rb', 'b', 'lb', 'l'];
-            for (var i = 0; i < 8; i++) {
-                var n = util.create('div', {className: arr[i]});
-                this.cropNode.appendChild(n);
-                this._archors[arr[i]] = n;
-            }
-
-            //Create blocks for showing dark areas
-            arr = ['l', 't', 'r', 'b'];
-            for (var i = 0; i < 4; i++) {
-                var n = document.createElement('div');
-                n.className = 'block block-' + arr[i];
-                this.domNode.appendChild(n);
-            }
-        }
-
+        //Public APIs
+        //------------------------------------------------------------
         ,setImage: function(url) {
+            // summary:
+            //  Set the image to be cropped. The container size will fit the image.
             var img = new Image();
             img.src = url;
             this.image = url;
             if (!this.imageNode) {
-                this.imageNode = document.createElement('img');
+                this.imageNode = util.create('img');
                 this.domNode.appendChild(this.imageNode);
             }
             this.imageNode.src = url;
@@ -127,15 +120,107 @@
             //Fit the container size
             if (!this.imageNode.offsetWidth) {
                 var self = this;
+                //TODO: onerror?
                 this.imageNode.onload = function(){
-                    self.setSize(self.imageNode.offsetWidth, self.imageNode.offsetHeight);
+                    self._setSize(self.imageNode.offsetWidth, self.imageNode.offsetHeight);
                 }
             } else {
-                this.setSize(this.imageNode.offsetWidth, this.imageNode.offsetHeight);
+                this._setSize(this.imageNode.offsetWidth, this.imageNode.offsetHeight);
             }
         }
 
-        ,setSize: function(w, h) {
+        ,bindPreview: function(node){
+            // summary:
+            //  Bind a node as the preview area. e.g: a real size avatar
+            node = util.byId(node);
+            util.style(node, {overflow: 'hidden'});
+            var width = parseInt(util.style(node, 'width'))
+                ,height = parseInt(util.style(node, 'height'))
+                ;
+            var previewImage = util.create('img', {src: this.image});
+            node.appendChild(previewImage);
+
+            var _oldOnChange = this.onChange;
+            this.onChange = function(info){
+                _oldOnChange.call(this, info);
+                var rateX =  width/info.w
+                    ,rateY = height/info.h
+                    ;
+                util.style(previewImage , {
+                    width: info.cw*rateX + 'px'
+                    ,height:info.ch*rateY + 'px'
+                    ,marginLeft: -info.l*rateX + 'px'
+                    ,marginTop: -info.t*rateY + 'px'
+                });
+            }
+        }
+
+        ,getInfo: function() {
+            // summary:
+            //  Get the cropping infomation. Such as being used by server side for real cropping.
+            return {
+                w: this.cropNode.offsetWidth - 2    //2 is hard code border width
+                ,h: this.cropNode.offsetHeight - 2
+                ,l: parseInt(util.style(this.cropNode, 'left'))
+                ,t: parseInt(util.style(this.cropNode, 'top'))
+                ,cw: this.domNode.offsetWidth //container width
+                ,ch: this.domNode.offsetHeight //container height
+            };
+        }
+
+        ,onChange: function() {
+            //Event:
+            //    When the cropping size is changed.
+        }
+        ,onComplete: function() {
+            //Event:
+            //    When mouseup.
+        }
+
+        //Private APIs
+        //------------------------------------------------------------
+        ,_init: function() {
+            util.addCss(this.domNode, 'icropper');
+            this._buildRendering();
+            this._updateUI();
+            util.connect(this.cropNode, 'onmousedown', this, '_onMouseDown');
+            util.connect(document, 'onmouseup', this, '_onMouseUp');
+            util.connect(document, 'onmousemove', this, '_onMouseMove');
+            this.image && this.setImage(this.image);
+
+            if(this.preview){
+                var self = this;
+                util.each(this.preview, function(node){
+                    self.bindPreview(node);
+                });
+            }
+        }
+
+        ,_buildRendering: function() {
+            this._archors = {};
+            this._blockNodes = {};
+
+            this.cropNode = util.create('div', {className: 'crop-node no-select'});
+            this.domNode.appendChild(this.cropNode);
+
+            //Create archors
+            var arr = ['lt', 't', 'rt', 'r', 'rb', 'b', 'lb', 'l'];
+            for (var i = 0; i < 8; i++) {
+                var n = util.create('div', {className: 'archor archor-' + arr[i]});
+                this.cropNode.appendChild(n);
+                this._archors[arr[i]] = n;
+            }
+
+            //Create blocks for showing dark areas
+            arr = ['l', 't', 'r', 'b'];
+            for (var i = 0; i < 4; i++) {
+                var n = util.create('div', {className: 'block block-' + arr[i]});
+                this.domNode.appendChild(n);
+                this._blockNodes[arr[i]] = n;
+            }
+        }
+
+        ,_setSize: function(w, h) {
 
             this.domNode.style.width = w + 'px';
             this.domNode.style.height = h + 'px';
@@ -144,9 +229,14 @@
             if (this.initialSize) {
                 var m = Math.min(w, h, this.initialSize);
                 w2 = h2 = m - 2 + 'px';
-            } else {
-                w2 = w - this.gap * 2 - 2 + 'px'
-                h2 = h - this.gap * 2 - 2 + 'px'
+            }else{
+                w2 = w - this.gap * 2 - 2;
+                h2 = h - this.gap * 2 - 2;
+                if(this.keepSquare){
+                    w2 = h2 = Math.min(w2, h2);
+                }
+                w2 += 'px';
+                h2 += 'px';
             }
 
             var s = this.cropNode.style;
@@ -162,26 +252,27 @@
             s.left = l + 'px';
             s.top = t + 'px';
      
-            this.posArchors();
-            this.posBlocks();
+            this._posArchors();
+            this._posBlocks();
             this.onChange(this.getInfo());
         }
 
-        ,updateUI: function() {
-            this.posArchors();
-            this.posBlocks();
+        ,_updateUI: function() {
+            this._posArchors();
+            this._posBlocks();
         }
 
-        ,posArchors: function() {
+        ,_posArchors: function() {
             var a = this._archors,
                 w = this.cropNode.offsetWidth,
                 h = this.cropNode.offsetHeight;
-
-            a.t.style.left = a.b.style.left = w / 2 - 4 + 'px';
-            a.l.style.top = a.r.style.top = h / 2 - 4 + 'px';
+            w = w / 2 - 4 + 'px';
+            h = h / 2 - 4 + 'px';
+            a.t.style.left = a.b.style.left = w;
+            a.l.style.top = a.r.style.top = h;
         }
 
-        ,posBlocks: function() {
+        ,_posBlocks: function() {
             var p = this.startedPos,
                 b = this._blockNodes;
             var l = parseInt(this.cropNode.style.left);
@@ -202,64 +293,53 @@
         }
 
         ,_onMouseDown: function(e) {
-            this.dragging = e.target == this.cropNode ? 'move' : e.target.className;
-            var pos = dojo.position(this.cropNode);
-            var pos2 = dojo.position(this.domNode);
-            //console.debug(pos,e);
-            this.startedPos = {
-                x: e.pageX,
-                y: e.pageY,
-                h: pos.h - 2 //2 is border width
-                ,
-                w: pos.w - 2,
-                l: pos.x - pos2.x,
-                t: pos.y - pos2.y
+            var n = this.cropNode, s = n.style;
+            this.dragging = (e.target == n) ? 'move' : e.target.className;
+            if(this.dragging != 'move'){
+                var arr = this.dragging.split(' ');
+                this.dragging = arr.pop().split('-')[1];
             }
-            var c = dojo.style(e.target, 'cursor');
-            dojo.style(document.body, {
-                cursor: c
-            });
-            dojo.style(this.cropNode, {
-                cursor: c
-            });
 
+            this.startedPos = {
+                x: e.pageX
+                ,y: e.pageY
+                ,h: n.offsetHeight - 2 //2 is border width
+                ,w: n.offsetWidth - 2
+                ,l: parseInt(util.style(n, 'left'))
+                ,t: parseInt(util.style(n, 'top'))
+            }
+            var c = util.style(e.target, 'cursor');
+            util.style(document.body, {
+                cursor: c
+            });
+            util.style(this.cropNode, {
+                cursor: c
+            });
+            util.addCss(document.body, 'no-select');
         }
 
         ,_onMouseUp: function(e) {
             this.dragging = false;
-            dojo.style(document.body, {
+            util.style(document.body, {
                 cursor: 'default'
             });
-            dojo.style(this.cropNode, {
+            util.style(this.cropNode, {
                 cursor: 'move'
             });
-            this.onDone(this.getInfo());
-        }
-
-        ,getInfo: function() {
-            return {
-                w: this.cropNode.offsetWidth - 2,
-                h: this.cropNode.offsetHeight - 2,
-                l: parseInt(this.cropNode.style.left || dojo.style(this.cropNode, 'left')),
-                t: parseInt(this.cropNode.style.top || dojo.style(this.cropNode, 'top')),
-                cw: this.domNode.offsetWidth //container width
-                ,
-                ch: this.domNode.offsetHeight //container height
-            };
+            util.rmCss(document.body, 'no-select');
+            this.onComplete && this.onComplete(this.getInfo());
         }
 
         ,_onMouseMove: function(e) {
             if (!this.dragging) return;
 
-            if (this.dragging == 'move') this.doMove(e);
-            else this.doResize(e);
-            this.updateUI();
-
-            this.onChange(this.getInfo());
+            if (this.dragging == 'move') this._doMove(e);
+            else this._doResize(e);
+            this._updateUI();
+            this.onChange && this.onChange(this.getInfo());
         }
 
-        ,doMove: function(e) {
-            //console.debug('doing move',e);
+        ,_doMove: function(e) {
             var s = this.cropNode.style,
                 p0 = this.startedPos;
             var l = p0.l + e.pageX - p0.x;
@@ -272,26 +352,20 @@
             if (t > maxT) t = maxT;
             s.left = l + 'px';
             s.top = t + 'px'
-
         }
-
-        ,onChange: function() {
-            //Event:
-            //    When the cropping size is changed.
-        }
-        ,onDone: function() {
-            //Event:
-            //    When mouseup.
-        }
-        ,doResize: function(e) {
-            var m = this.dragging,
-                s = this.cropNode.style,
-                p0 = this.startedPos;
+        
+        ,_doResize: function(e) {
+            var m = this.dragging
+                ,s = this.cropNode.style
+                ,cw = this.cropNode.offsetWidth
+                ,ch = this.cropNode.offsetHeight
+                ,p0 = this.startedPos
+                ;
             //delta x and delta y
             var dx = e.pageX - p0.x,
                 dy = e.pageY - p0.y;
 
-            if (this.keepSquare) {
+            if (this.keepSquare || e.shiftKey) {
                 if (m == 'l') {
                     dy = dx;
                     if (p0.l + dx < 0) dx = dy = -p0.l;
@@ -325,8 +399,10 @@
             if (/l/.test(m)) {
                 dx = Math.min(dx, p0.w - this.minWidth);
                 if (p0.l + dx >= 0) {
+                    
                     s.left = p0.l + dx + 'px';
                     s.width = p0.w - dx + 'px';
+                    
                 } else {
                     s.left = 0;
                     s.width = p0.l + p0.w + 'px';
@@ -359,13 +435,14 @@
                 }
             }
 
-            if (this.keepSquare) {
+            if (this.keepSquare || e.shiftKey) {
                 var min = Math.min(parseInt(s.width), parseInt(s.height));
                 s.height = s.width = min + 'px';
             }
         }
 
+        ,destroy: function(){
+            //TODO: destroy self to release memory
+        }
     }
-
-
 })();

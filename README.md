@@ -1,4 +1,8 @@
-icropper
+iCropper
 ========
 
-Image Cropper by javascript
+Javascript Image Cropper
+
+
+
+Script released under the MIT license.
