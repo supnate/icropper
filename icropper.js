@@ -114,19 +114,13 @@
             if (!this.imageNode) {
                 this.imageNode = util.create('img');
                 this.domNode.appendChild(this.imageNode);
-            }
-            this.imageNode.src = url;
-
-            //Fit the container size
-            if (!this.imageNode.offsetWidth) {
                 var self = this;
                 //TODO: onerror?
                 this.imageNode.onload = function(){
-                    self._setSize(self.imageNode.offsetWidth, self.imageNode.offsetHeight);
+                    self._setSize(this.offsetWidth, this.offsetHeight);
                 }
-            } else {
-                this._setSize(this.imageNode.offsetWidth, this.imageNode.offsetHeight);
             }
+            this.imageNode.src = url;
         }
 
         ,bindPreview: function(node){
