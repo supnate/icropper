@@ -1,19 +1,19 @@
 .icropper {
-	position: relative;
+    position: relative;
 }
 
 .no-select {
-	-webkit-touch-callout: none;
-	-webkit-user-select: none;
-	-khtml-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .icropper .crop-node {
-	/*blank bg image for IE*/
-	background-image: url('data:image/gif;base64,R0lGODlhMgAyAIAAAAAAAP///yH5BAEHAAEALAAAAAAyADIAAAIzjI+py+0Po5y02ouz3rz7D4biSJbmiabqyrbuC8fyTNf2jef6zvf+DwwKh8Si8YhMKicFADs=');
+    /*blank bg image for IE*/
+    background-image: url('data:image/gif;base64,R0lGODlhMgAyAIAAAAAAAP///yH5BAEHAAEALAAAAAAyADIAAAIzjI+py+0Po5y02ouz3rz7D4biSJbmiabqyrbuC8fyTNf2jef6zvf+DwwKh8Si8YhMKicFADs=');
     border: 1px dotted #999;
     position: absolute;
     z-index: 8;
@@ -23,31 +23,31 @@
 }
 
 .icropper .archor{
-	width: 5px;
-	height: 5px;
-	border: 1px solid #ccc;
-	position: absolute;
-	z-index: 10;
+    width: 5px;
+    height: 5px;
+    border: 1px solid #ccc;
+    position: absolute;
+    z-index: 10;
 }
-.icropper .archor-lt 	{	cursor: nw-resize; left:-4px; top: -4px;}
-.icropper .archor-t 	{ 	cursor: n-resize; top: -4px; }
-.icropper .archor-rt 	{	cursor: ne-resize; right: -4px; top: -4px;}
-.icropper .archor-r 	{	cursor: e-resize; right: -4px;}
-.icropper .archor-rb 	{	cursor: se-resize; right: -4px; bottom: -4px;}
-.icropper .archor-b 	{	cursor: s-resize; bottom: -4px;}
-.icropper .archor-lb 	{	cursor: sw-resize; left: -4px; bottom: -4px;}
-.icropper .archor-l 	{	cursor: w-resize; left: -4px;}
+.icropper .archor-lt    {   cursor: nw-resize; left:-4px; top: -4px;}
+.icropper .archor-t     {   cursor: n-resize; top: -4px; }
+.icropper .archor-rt    {   cursor: ne-resize; right: -4px; top: -4px;}
+.icropper .archor-r     {   cursor: e-resize; right: -4px;}
+.icropper .archor-rb    {   cursor: se-resize; right: -4px; bottom: -4px;}
+.icropper .archor-b     {   cursor: s-resize; bottom: -4px;}
+.icropper .archor-lb    {   cursor: sw-resize; left: -4px; bottom: -4px;}
+.icropper .archor-l     {   cursor: w-resize; left: -4px;}
 
 .icropper .block    {    
-	position: absolute; 
-	opacity:0.5;
-	z-index: 5;
-	background-color: #000;
+    position: absolute; 
+    opacity:0.5;
+    z-index: 5;
+    background-color: #000;
 
-	/* IE 8 */
-	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
-	/* IE 5-7 */
-	filter: alpha(opacity=50);
+    /* IE 8 */
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+    /* IE 5-7 */
+    filter: alpha(opacity=50);
 }
 .icropper .block-l  {    left: 0; }
 .icropper .block-t  {    top: 0; width: 100%; }
@@ -55,8 +55,8 @@
 .icropper .block-b  {    bottom: 0; width: 100%; }
 
 .icropper img {
-	position: absolute;
-	z-index: 1;
-	left: 0;
-	top: 0;
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    top: 0;
 }
