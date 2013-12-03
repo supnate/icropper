@@ -7,50 +7,137 @@
 	<script type="text/javascript" src="icropper.js"></script>
 
 	<style type="text/css">
-		#cropperContainer {
-			float: left;
+		.demoWrapper {
+			padding: 20px;
+			border-top: 2px solid #eee;
+			width: 800px;
+			margin: auto;
 		}
-		#previews {
+		.cropperContainer {
+			float: left;
+			border: 0px solid #eee;
+		}
+		.previews {
 			float: left;
 			margin-left: 0px;
 		}
-		#previewSmall {
+		.previewSmall {
 			margin: 40px;
 			width: 60px;
 			height: 60px;
 		}
-		#previewBig {
+		.previewBig {
 			margin: 40px;
-			width: 150px;
-			height: 150px;
+			width: 100px;
+			height: 100px;
+		}
+
+		.info {
+			clear: both;
+			padding: 5px;
+			font-family: Arial;
+			font-size: 12px;
+			color: #777;
+		}
+		h1 {
+			font-family: Arial;
+			color: #777;
+			text-align: center;
+		}
+		h2 {
+			font-family: Arial;
+			color: #777;
 		}
 	</style>
 
 </head>
 
 <body>
-	<div id="cropperContainer"></div>
-
-	<div id="previews">
-		<div id="previewSmall"></div>
-		<div id="previewBig"></div>
+	<h1>Demos</h1>
+	<div id="demo1" class="demoWrapper">
+		<h2>Keep crop area square</h2>
+		<div id="cropperContainer1" class="cropperContainer"></div>
+		<div class="previews">
+			<div id="previewSmall1" class="previewSmall"></div>
+			<div id="previewBig1" class="previewBig"></div>
+		</div>
+		<div id="info1" class="info"></div>
 	</div>
-	
+
+	<div id="demo2" class="demoWrapper">
+		<h2>Free resizing (shift key to keep square)</h2>
+		<div id="cropperContainer2" class="cropperContainer"></div>
+		<div class="previews">
+			<div id="previewSmall2" class="previewSmall"></div>
+			<div id="previewBig2" class="previewBig"></div>
+		</div>
+		<div id="info2" class="info"></div>
+	</div>
+
+	<div id="demo3" class="demoWrapper">
+		<h2>Keep width:height = 2:1</h2>
+		<div id="cropperContainer3" class="cropperContainer"></div>
+		<div class="previews">
+			<div id="previewSmall3" class="previewSmall"></div>
+			<div id="previewBig3" class="previewBig"></div>
+		</div>
+		<div id="info3" class="info"></div>
+	</div>
 </body>
 
 
 <script type="text/javascript">
-	var ic = new ICropper(
-		'cropperContainer'
+	var infoNode1 = document.getElementById('info1');
+	var ic1 = new ICropper(
+		'cropperContainer1'
 		,{
-			keepSquare: true
+			ratio: 1
 			,image: 'demo.png'
+			,onChange: function(info){	//onChange must be set when constructing.
+				infoNode1.innerHTML = 'Left: ' + info.l + 'px, Top: '+info.t
+					+ 'px, Width: ' + info.w + 'px, Height: ' + info.h+'px';
+			}
 			,preview: [
-				'previewSmall'
+				'previewSmall1'
 			]
 		});
 	//use bindPreview to dynamically add preview nodes
-	ic.bindPreview('previewBig');
+	ic1.bindPreview('previewBig1');
+
+	var infoNode2 = document.getElementById('info2');
+	var ic2 = new ICropper(
+		'cropperContainer2'
+		,{
+			ratio: 0
+			,image: 'demo.png'
+			,onChange: function(info){	//onChange must be set when constructing.
+				infoNode2.innerHTML = 'Left: ' + info.l + 'px, Top: ' + info.t
+					+ 'px, Width: ' + info.w + 'px, Height: ' + info.h + 'px';
+			}
+			,preview: [
+				'previewSmall2'
+			]
+		});
+	//use bindPreview to dynamically add preview nodes
+	ic2.bindPreview('previewBig2');
+
+	var infoNode3 = document.getElementById('info3');
+	var ic3 = new ICropper(
+		'cropperContainer3'
+		,{
+			ratio: 2
+			,image: 'demo.png'
+			,onChange: function(info){	//onChange must be set when constructing.
+				infoNode3.innerHTML = 'Left: ' + info.l + 'px, Top: ' + info.t
+					+ 'px, Width: ' + info.w + 'px, Height: ' + info.h + 'px';
+			}
+			,preview: [
+				'previewSmall3'
+			]
+		});
+	//use bindPreview to dynamically add preview nodes
+	ic3.bindPreview('previewBig3');
+	
 	
 </script>
 </html>
