@@ -13,13 +13,15 @@
             this.mixin(node, attrs);
             return node;
         }
-        ,connect: function(node, evt, context, callback){
+        ,connect: function(node, evtType, context, callback){
             //TODO: use event listeners instead
             var self = this;
-            node[evt] = function(evt){
+            function handler(evt){
                 evt = self.fixEvent(evt);
                 context[callback](evt);
             }
+            if(node.attachEvent)node.attachEvent('on' + evtType, handler);
+            else node.addEventListener(evtType, handler, false);
         }
         ,style: function(node, args){
             if(typeof args == 'string'){
@@ -64,13 +66,16 @@
         }
     };
 
-    
-
     window.ICropper = function (container, options){
         // summary:
         //  Constructor of the Image Cropper, the container could be a dom node or id.
 
         container = util.byId(container);
+        if(options.keepSquare){
+            //keepSquare is deprecated. Should use ratio=1 instead.
+            options.ratio = 1;
+            delete options.keepSquare;
+        }
         for(var p in options){
             if(options[p])this[p] = options[p];
         }
@@ -94,7 +99,11 @@
         ,initialSize: 0
 
         //whether to keep crop region as a square
+        //DEPRECATED: use ratio=1 instead.
         ,keepSquare: false
+
+        //whether to keep the ratio of width:height, 0 means not set
+        ,ratio: 0
 
         //array: the nodes to show previews of cropped image
         ,preview: null
@@ -135,10 +144,20 @@
             node.appendChild(previewImage);
 
             var _oldOnChange = this.onChange;
+            var self = this;
             this.onChange = function(info){
                 _oldOnChange.call(this, info);
-                var rateX =  width/info.w
-                    ,rateY = height/info.h
+
+                var r = info.w/info.h
+                    ,w2 = height*r
+                    ,h2 = width/r
+                    ;
+                if(w2 >= width)w2 = width;
+                if(h2 >= height)h2 = height;
+                util.style(node, {width: w2 + 'px', height: h2 + 'px'});
+                
+                var rateX =  w2/info.w
+                    ,rateY = h2/info.h
                     ;
                 util.style(previewImage , {
                     width: info.cw*rateX + 'px'
@@ -170,6 +189,9 @@
             //Event:
             //    When mouseup.
         }
+        ,destroy: function(){
+            //TODO: destroy self to release memory
+        }
 
         //Private APIs
         //------------------------------------------------------------
@@ -177,11 +199,11 @@
             util.addCss(this.domNode, 'icropper');
             this._buildRendering();
             this._updateUI();
-            util.connect(this.cropNode, 'onmousedown', this, '_onMouseDown');
-            util.connect(document, 'onmouseup', this, '_onMouseUp');
-            util.connect(document, 'onmousemove', this, '_onMouseMove');
+            util.connect(this.cropNode, 'mousedown', this, '_onMouseDown');
+            util.connect(document, 'mouseup', this, '_onMouseUp');
+            util.connect(document, 'mousemove', this, '_onMouseMove');
             this.image && this.setImage(this.image);
-
+            
             if(this.preview){
                 var self = this;
                 util.each(this.preview, function(node){
@@ -226,8 +248,11 @@
             }else{
                 w2 = w - this.gap * 2 - 2;
                 h2 = h - this.gap * 2 - 2;
-                if(this.keepSquare){
-                    w2 = h2 = Math.min(w2, h2);
+                if(this.ratio){
+                    var _w2 = h2*this.ratio, _h2 = w2/this.ratio;
+                    if(w2 > _w2)w2 = _w2;
+                    if(h2 > _h2)h2 = _h2;
+                   
                 }
                 w2 += 'px';
                 h2 += 'px';
@@ -369,30 +394,35 @@
             var dx = e.pageX - p0.x,
                 dy = e.pageY - p0.y;
 
-            if (this.keepSquare || e.shiftKey) {
+            var ratio = this.ratio;
+            if(!ratio && e.shiftKey)ratio = 1;//Shiftkey is only available when there's no ratio set.
+
+            if (ratio){
                 if (m == 'l') {
-                    dy = dx;
-                    if (p0.l + dx < 0) dx = dy = -p0.l;
-                    if (p0.t + dy < 0) dx = dy = -p0.t;
+                    dy = dx/ratio;
+                    if (p0.l + dx < 0) {dx = -p0.l; dy = dx / ratio;}
+                    if (p0.t + dy < 0) {dy = -p0.t; dx = dy * ratio;}
                     m = 'lt';
                 } else if (m == 'r') {
-                    dy = dx;
+                    dy = dx/ratio;
                     m = 'rb';
                 } else if (m == 'b') {
-                    dx = dy;
+                    dx = dy*ratio;
                     m = 'rb';
                 } else if (m == 'lt') {
-                    dx = dy = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-                    if (p0.l + dx < 0) dx = dy = -p0.l;
-                    if (p0.t + dy < 0) dx = dy = -p0.t;
+                    dx = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+                    dy = dx/ratio;
+                    if (p0.l + dx < 0) {dx = -p0.l; dy = dx / ratio;}
+                    if (p0.t + dy < 0) {dy = -p0.t; dx = dy * ratio;}
                 } else if (m == 'lb') {
-                    dy = -dx;
+                    dx = Math.abs(dx) > Math.abs(dy) ? dx : -dy;
+                    dy = -dx/ratio;
                     if (p0.l + dx < 0) {
                         dx = -p0.l;
                         dy = p0.l;
                     }
                 } else if (m == 'rt' || m == 't') {
-                    dx = -dy;
+                    dx = -dy*ratio;
                     m = 'rt';
                     if (p0.t + dy < 0) {
                         dy = -p0.t;
@@ -403,10 +433,8 @@
             if (/l/.test(m)) {
                 dx = Math.min(dx, p0.w - this.minWidth);
                 if (p0.l + dx >= 0) {
-                    
                     s.left = p0.l + dx + 'px';
                     s.width = p0.w - dx + 'px';
-                    
                 } else {
                     s.left = 0;
                     s.width = p0.l + p0.w + 'px';
@@ -439,14 +467,24 @@
                 }
             }
 
-            if (this.keepSquare || e.shiftKey) {
-                var min = Math.min(parseInt(s.width), parseInt(s.height));
-                s.height = s.width = min + 'px';
+            if(ratio){
+                var w = parseInt(s.width), h = parseInt(s.height);
+                var w2 = h * ratio, h2 = w/ratio;
+                if(w2 < w){
+                    if (/l/.test(m)) {
+                        s.left = parseInt(s.left) + w - w2 + 'px';
+                    }
+                    w = w2;
+                }
+                if(h2 < h){
+                    if (/t/.test(m)){
+                        s.top = parseInt(s.top) + h - h2 + 'px';
+                    }
+                    h = h2;
+                }
+                s.width = w + 'px';
+                s.height = h + 'px';
             }
-        }
-
-        ,destroy: function(){
-            //TODO: destroy self to release memory
         }
     }
 })();

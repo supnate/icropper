@@ -11,7 +11,7 @@ Usage
 var ic = new ICropper(
 	'cropperContainer'    //Container id
 	,{
-		keepSquare: true    //Keep cropper area  square or rectangle
+		ratio: 1    //Set aspect ratio of the cropping area
 		,image: 'demo.png'
 		,preview: [
 				'previewSmall'  //Preview node id
