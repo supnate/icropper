@@ -5,6 +5,10 @@ iCropper is an image cropper implemented by pure javascript without any library 
 
 DEMO: http://supnate.github.io/icropper/demo.html
 
+Browser support
+=========
+IE 7+, Chrome, Firefox, Opera, Safari
+
 Usage
 =========
 ```js
