@@ -22,7 +22,8 @@ var ic = new ICropper(
 		,preview: [
 				'previewSmall'  //Preview node id
 		]
-});
+	}
+);
 //use bindPreview to dynamically add preview nodes
 ic.bindPreview('previewBig');
 ```
