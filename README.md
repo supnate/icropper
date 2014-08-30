@@ -1,7 +1,7 @@
 iCropper
 ========
 
-iCropper is an image cropper implemented by pure javascript without any library dependency. It aims to be simple, fast and easy to use.
+iCropper is an image cropper written in pure javascript without any library dependency. It aims to be simple, fast and easy to use.
 
 DEMO: http://supnate.github.io/icropper/demo.html
 
