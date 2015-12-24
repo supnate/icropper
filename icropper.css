@@ -37,7 +37,11 @@
 .icropper .archor-b     {   cursor: s-resize; bottom: -4px;}
 .icropper .archor-lb    {   cursor: sw-resize; left: -4px; bottom: -4px;}
 .icropper .archor-l     {   cursor: w-resize; left: -4px;}
-
+.icropper .barchor       {   position: absolute;}
+.icropper .barchor-t     {   cursor: n-resize;height: 7px;width: 100%;margin-top: -4px;}
+.icropper .barchor-b     {   cursor: s-resize;height: 7px;width: 100%;bottom: 0;margin-bottom: -4px;}
+.icropper .barchor-l     {   cursor: w-resize;width: 7px;height: 100%;margin-left: -4px;}
+.icropper .barchor-r     {   cursor: e-resize;width: 7px;height: 100%;right: 0;margin-right: -4px;}
 .icropper .block    {    
     position: absolute; 
     opacity:0.5;
