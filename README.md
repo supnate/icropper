@@ -28,5 +28,6 @@ var ic = new ICropper(
 ic.bindPreview('previewBig');
 ```
 
+License
 =======
-Script released under the MIT license.
+MIT
