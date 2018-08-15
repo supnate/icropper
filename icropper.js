@@ -233,6 +233,9 @@
                 var n = util.create('div', {className: 'block block-' + arr[i]});
                 this.domNode.appendChild(n);
                 this._blockNodes[arr[i]] = n;
+
+                var d = util.create('div', {className: 'barchor barchor-' + arr[i]});
+                this.cropNode.appendChild(d);
             }
         }
 
